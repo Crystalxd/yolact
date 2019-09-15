@@ -568,20 +568,20 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
     frame = torch.from_numpy(cv2.imread(path)).float()
     batch = FastBaseTransform()(frame.unsqueeze(0))
 
-    sess = rt.InferenceSession("yolact.onnx")
+    sess = rt.InferenceSession("yolact_simplify.onnx")
     input_name = sess.get_inputs()[0].name
     loc_name = sess.get_outputs()[0].name
     conf_name = sess.get_outputs()[1].name
     mask_name = sess.get_outputs()[2].name
-    priors_name = sess.get_outputs()[3].name
-    proto_name = sess.get_outputs()[4].name
+    #priors_name = sess.get_outputs()[3].name
+    proto_name = sess.get_outputs()[3].name
 
-    pred_onx = sess.run([loc_name, conf_name, mask_name, priors_name, proto_name], {input_name: batch.cpu().detach().numpy()})
+    pred_onx = sess.run([loc_name, conf_name, mask_name, proto_name], {input_name: batch.cpu().detach().numpy()})
 
-    #priors = np.loadtxt('priors.txt', delimiter=',', dtype='float32')
+    priors = np.loadtxt('priors.txt', delimiter=',', dtype='float32')
 
     detect = Detect(cfg.num_classes, bkg_label=0, top_k=200, conf_thresh=0.05, nms_thresh=0.5)
-    preds = detect({'loc': torch.from_numpy(pred_onx[0]), 'conf': torch.from_numpy(pred_onx[1]), 'mask': torch.from_numpy(pred_onx[2]), 'priors': torch.from_numpy(pred_onx[3]), 'proto': torch.from_numpy(pred_onx[4])})
+    preds = detect({'loc': torch.from_numpy(pred_onx[0]), 'conf': torch.from_numpy(pred_onx[1]), 'mask': torch.from_numpy(pred_onx[2]), 'priors': torch.from_numpy(priors), 'proto': torch.from_numpy(pred_onx[3])})
 
     img_numpy = prep_display(preds, frame, None, None, undo_transform=False)
     
